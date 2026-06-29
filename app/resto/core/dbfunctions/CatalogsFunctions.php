@@ -423,6 +423,10 @@ class CatalogsFunctions
         $set = array();
         $cleanLinks = $this->getCleanLinks($catalog, $user, $context);
 
+        if (isset($cleanLinks['external'])) {
+           RestoLogUtil::httpError(400, "Link " . $cleanLinks['href'] . " invalid, external link update unauthorized");
+        }
+
         if (array_key_exists('links', $cleanLinks)) {
             $catalog['links'] = $cleanLinks['links'];
         }
@@ -641,10 +645,7 @@ class CatalogsFunctions
         $cleanLinks = $this->getCleanLinks($catalog, $user, $context);
 
         if (isset($cleanLinks['external'])) {
-            $catalog['stac_url'] = $cleanLinks['external']['href'];
-            $catalog['title'] = $cleanLinks['external']['title'] ?? $catalog['title'] ?? null;
-            $catalog['description'] = $cleanLinks['external']['description'] ?? $catalog['description'] ?? null;
-            $catalog['links'] = null;
+           RestoLogUtil::httpError(400, "Link " . $cleanLinks['href'] . " invalid, external link creation unauthorized");
         }
 
         // For collection, do not store properties since it's a duplication of properties within collection table
@@ -987,7 +988,6 @@ class CatalogsFunctions
                 ];
                 break;
             }
-
             if (in_array($link['rel'], array('child', 'item', 'items'))) {
 
                 if (!isset($link['href'])) {
@@ -1037,23 +1037,18 @@ class CatalogsFunctions
                      * Avoid cycling (i.e. catalog self referencing one of its parent)
                      */
                     if (str_starts_with($link['href'], $context->core['baseUrl'] . RestoRouter::ROUTE_TO_CATALOGS)) {
-                        $childId = substr($link['href'], strlen($context->core['baseUrl'] . RestoRouter::ROUTE_TO_CATALOGS) + 1);
-                        $exploded = explode('/', $childId);
-                        if (count($exploded) <= count(explode('/', $catalog['id']))) {
-                            RestoLogUtil::httpError(400, 'Child ' . $link['href'] . ' is invalid because it references a parent resource');
-                        }
-                        // Keep track of child ids for delete before update
-                        else {
-                            $output['childIds'][] = $childId;
+                        $childExploded = explode('/', substr($link['href'], strlen($context->core['baseUrl'] . RestoRouter::ROUTE_TO_CATALOGS) + 1));
+                        $selfExploded = explode('/', $catalog['id']);
+                        if ($childExploded[count($childExploded) - 2] != $selfExploded[count($selfExploded) - 1]) {
+                            RestoLogUtil::httpError(400, 'Catalog child ' . $link['href'] . ' is invalid because it tries to reference a catalog that is not its child');
                         }
                     }
 
                     /*
-                     * Store local collection within links
+                     * Collections should be posted under catalog as any catalog child
                      */
                     if (str_starts_with($link['href'], $context->core['baseUrl'] . RestoRouter::ROUTE_TO_COLLECTIONS)) {
-                        $output['links'][] = $link;
-                        continue;
+                        RestoLogUtil::httpError(400, 'Catalog child ' . $link['href'] . ' is invalid because it tries to reference a collection that is not its child');
                     }
                 }
 

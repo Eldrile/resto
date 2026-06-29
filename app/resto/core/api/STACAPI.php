@@ -498,6 +498,7 @@ class STACAPI
         /*
          * Compute internal catalog id as full path
          */
+        $oldBodyId = $body['id'];
         $body['id'] = $this->getIdPath($body, $parentId);
 
 
@@ -525,6 +526,7 @@ class STACAPI
         * Convert visibility from names to ids
         */
         if (isset($body['visibility'])) {
+            $oldBodyVisibility = $body['visibility'];
             $body['visibility'] = (new GeneralFunctions($this->context->dbDriver))->visibilityNamesToIds($body['visibility']);
             if (empty($body['visibility'])) {
                 RestoLogUtil::httpError(400, 'Visibility is set but either emtpy or referencing an unknown group');
@@ -580,11 +582,16 @@ class STACAPI
          * [IMPORTANT] Special case - post a collection under a catalog is in fact an update of 'links' property of this catalog
          */
         if ($body['type'] === 'Collection') {
-
+            $newId =  $body['id'];
+            $newVisibility =    $body['visibility'];
+            $body['id'] = $oldBodyId;
+            $body['visibility'] = $oldBodyVisibility;
             // Collection does not exist - created first
             if (!(new CollectionsFunctions($this->context->dbDriver))->collectionExists($body['id'])) {
                 $this->context->keeper->getRestoCollections($this->user)->create($body, $params['model'] ?? null);
             }
+            $body['id'] = $newId;
+            $body['visibility'] = $newVisibility;
         }
 
         if ($this->catalogsFunctions->getCatalog($body['id'], $this->user) !== null) {
@@ -1764,16 +1771,16 @@ class STACAPI
 
         for ($i = 1, $ii = count($catalogs); $i < $ii; $i++) {
             if ($this->user->hasGroup(RestoConstants::GROUP_ADMIN_ID)) {
-              $filtered_catalogs[] = $catalogs[$i];
+                $filtered_catalogs[] = $catalogs[$i];
             } else if ($catalogs[$i]['visibility']) {
-              for ($j = count($catalogs[$i]['visibility']); $j--;) {
-                  if ($this->user->hasGroup($catalogs[$i]['visibility'][$j])) {
-                      $filtered_catalogs[] = $catalogs[$i];
-                      break;
-                  }
-              }
+                for ($j = count($catalogs[$i]['visibility']); $j--;) {
+                    if ($this->user->hasGroup($catalogs[$i]['visibility'][$j])) {
+                        $filtered_catalogs[] = $catalogs[$i];
+                        break;
+                    }
+                }
             } else {
-              $filtered_catalogs[] = $catalogs[$i];
+                $filtered_catalogs[] = $catalogs[$i];
             }
         }
         // The path is the catalog identifier
@@ -1798,7 +1805,7 @@ class STACAPI
             'title' => $parentAndChilds['parent']['title'] ?? '',
             'description' => $parentAndChilds['parent']['description'] ?? '',
             'type' => ucfirst($parentAndChilds['parent']['rtype'] ?? 'catalog'),
-            'visibility'=> $visibility,
+            'visibility' => $visibility,
             'links' => array_merge(
                 $this->getBaseLinks($segments),
                 !empty($parentAndChilds['parent']['links']) ? array_merge($parentAndChilds['childs'], $parentAndChilds['parent']['links']) : $parentAndChilds['childs']
@@ -2058,8 +2065,7 @@ class STACAPI
 
             /*
              * Input ids should be an array of item id strings
-             */
-            elseif ($key === 'ids') {
+             */ elseif ($key === 'ids') {
                 if (!is_array($jsonQuery['ids'])) {
                     RestoLogUtil::httpError(400, 'Invalid ids parameter. Should be an array of strings');
                 }
@@ -2068,8 +2074,7 @@ class STACAPI
 
             /*
              * Input bbox should be an array of 4 floats
-             */
-            elseif ($key === 'bbox') {
+             */ elseif ($key === 'bbox') {
                 if (!is_array($jsonQuery['bbox']) || count($jsonQuery['bbox']) !== 4) {
                     RestoLogUtil::httpError(400, 'Invalid bbox parameter. Should be an array of 4 coordinates');
                 }
@@ -2078,18 +2083,16 @@ class STACAPI
 
             /*
              * Input intersects should be a GeoJSON geometry object
-             */
-            elseif ($key === 'intersects') {
+             */ elseif ($key === 'intersects') {
                 if (!isset($jsonQuery['intersects']['type']) || !isset($jsonQuery['intersects']['coordinates'])) {
                     RestoLogUtil::httpError(400, 'Invalid intersects. Should be a GeoJSON geometry object');
                 }
-                    $params['intersects'] = RestoGeometryUtil::geoJSONGeometryToWKT($jsonQuery['intersects']);
+                $params['intersects'] = RestoGeometryUtil::geoJSONGeometryToWKT($jsonQuery['intersects']);
             }
 
             /*
              * Input fields should be an array of property names, or a keyword '_all' or '_simple'
-             */
-            elseif ($key === 'fields') {
+             */ elseif ($key === 'fields') {
                 if (is_array($jsonQuery['fields'])) {
                     $params['fields'] = join(',', $jsonQuery['fields']);
                 } elseif (is_string($jsonQuery['fields']) && in_array($jsonQuery['fields'], array('_all', '_simple'))) {
@@ -2097,13 +2100,9 @@ class STACAPI
                 } else {
                     RestoLogUtil::httpError(400, 'Invalid fields parameter. Should be an array of strings, or a keyword "_all" or "_simple"');
                 }
-            }
-
-            elseif (in_array($key, $simpleParameters)) {
+            } elseif (in_array($key, $simpleParameters)) {
                 $params[$key] = $jsonQuery[$key];
-            }
-
-            else {
+            } else {
                 RestoLogUtil::httpError(400, 'Invalid query parameter "' . $key . '"');
             }
         }
@@ -2257,14 +2256,14 @@ class STACAPI
             'countCatalogs' => isset($params['_countCatalogs']) ? filter_var($params['_countCatalogs'], FILTER_VALIDATE_BOOLEAN) : $this->context->core['countCatalogs']
         ), false);
 
-               // Add pinned catalogs
+        // Add pinned catalogs
         $pinnedCatalogs = $this->catalogsFunctions->getCatalogs(array(
             'where' => 'pinned IS TRUE',
             'countCatalogs' => false,
             'noProperties' => true
         ), false);
 
-        $catalogs =  array_merge( $pinnedCatalogs, $firstLevelCatalogs);
+        $catalogs =  array_merge($pinnedCatalogs, $firstLevelCatalogs);
 
         for ($i = 0, $ii = count($catalogs); $i < $ii; $i++) {
 

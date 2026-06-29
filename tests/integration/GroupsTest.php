@@ -394,3 +394,5 @@ final class GroupsTest extends TestCase
         $this->assertSame($decoded->status, "success", $response);
     }
 }
+//TODO check if delete groups is forbidden
+//TODO create test create user forbidden
