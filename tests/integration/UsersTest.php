@@ -8,18 +8,24 @@ use PHPUnit\Framework\Attributes\Group;
 
 final class UsersTest extends TestCase
 {
+    #[Group('only')]
     public function testCanCreateUser(): void
     {
         $response = Utils::httpPost("http://localhost:5252/users", json_encode(Utils::user(uniqid("newuser"), uniqid("newUser") . "@toto.fr")));
+        $decoded = json_decode($response);
+        $this->assertSame($decoded->ErrorMessage, "createUser - You are not allowed to create a user when connecting through external identity provider, ask an administrator", $response);
 
+
+        $response = Utils::httpPost("http://admin:admin@localhost:5252/users", json_encode(Utils::user(uniqid("newuser"), uniqid("newUser") . "@toto.fr")));
         $decoded = json_decode($response);
         $this->assertSame($decoded->status, "success", $response);
     }
 
+    #[Group('only')]
     public function testCanUpdateUser(): void
     {
         $userName = uniqid("newuser");
-        $response = Utils::httpPost("http://localhost:5252/users", json_encode(Utils::user($userName, uniqid("newUser") . "@toto.fr")));
+        $response = Utils::httpPost("http://admin:admin@localhost:5252/users", json_encode(Utils::user($userName, uniqid("newUser") . "@toto.fr")));
 
         $decoded = json_decode($response);
         $this->assertSame($decoded->status, "success", $response);
