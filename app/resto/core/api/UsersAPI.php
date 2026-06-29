@@ -350,6 +350,10 @@ class UsersAPI
      */
     public function createUser($params, $body)
     {
+          if ($this->context->core['automaticGroupCreationFromIdp'] && !$this->user->hasGroup(RestoConstants::GROUP_ADMIN_ID)) {
+            RestoLogUtil::httpError(403, 'You are not allowed to create a user when connecting through external identity provider, ask an administrator');
+        }
+
         foreach (array('email', 'password', 'username') as $required) {
             if (!isset($body[$required])) {
                 RestoLogUtil::httpError(400, $required . ' is not set');
