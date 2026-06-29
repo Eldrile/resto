@@ -31,7 +31,6 @@ final class CollectionsTest extends TestCase
         $this->assertSame($decoded->ErrorMessage, "createCollection - Forbidden", $response);
     }
 
-    #[Group('only')]
     public function testCanUpdateCollection(): void
     {
         $utils = new Utils();

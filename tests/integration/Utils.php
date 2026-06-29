@@ -17,7 +17,7 @@ final class Utils extends Assert
             'Content-Length: ' . strlen($data),
         ]);
         $response = curl_exec($curl);
-        curl_close($curl);
+        unset($curl);
         return $response;
     }
 
@@ -32,7 +32,7 @@ final class Utils extends Assert
             'Content-Length: ' . strlen($data),
         ]);
         $response = curl_exec($curl);
-        curl_close($curl);
+        unset($curl);
         return $response;
     }
 
@@ -44,7 +44,7 @@ final class Utils extends Assert
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
 
         $result = curl_exec($curl);
-        curl_close($curl);
+        unset($curl);
 
         return $result;
     }
@@ -65,7 +65,7 @@ final class Utils extends Assert
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($curl, CURLOPT_HTTPHEADER, $headerArray);
         $response = curl_exec($curl);
-        curl_close($curl);
+        unset($curl);
         return $response;
     }
     public function createAPIUser(string $userName): string
@@ -81,7 +81,7 @@ final class Utils extends Assert
         $decoded = json_decode($response);
         $this->assertSame($decoded->status, "success", $response);
     }
-        /**
+    /**
      * @param array<int,mixed> $rights
      */
     public function adminCreateAPIGroup(string $ownerId, string $groupName): void
@@ -114,7 +114,7 @@ final class Utils extends Assert
         $decoded = json_decode($response);
         $this->assertSame($decoded->status, "success", $response);
     }
-    
+
     /**
      * @param array<int,mixed> $collection
      */
@@ -168,7 +168,7 @@ final class Utils extends Assert
         ];
     }
 
-        public static function groupByAdmin(string $groupName, string $ownerId): array
+    public static function groupByAdmin(string $groupName, string $ownerId): array
     {
         return [
             "name" => $groupName,
