@@ -375,15 +375,15 @@ class STACAPI
      *      summary="Get catalogs by path",
      *      description="Get catalogs by hierarchical path. For example: users, users/username, projects/copernicus-marine-products, projects/emodnet",
      *      tags={"Catalog"},
-     *      OA\Parameter(
-     *        name='catalogPath',
-     *        in='path',
+     *      @OA\Parameter(
+     *        name="catalogPath",
+     *        in="path",
      *        required=true,
-     *        description='Path to the catalog',
-     *        OA\Schema(
-     *          type='string'
+     *        description="Path to the catalog",
+     *        @OA\Schema(
+     *          type="string"
      *        ),
-     *        example='projects/foo/bar'
+     *        example="projects/foo/bar"
      *      ),
      *      @OA\Response(
      *          response="200",
