@@ -366,8 +366,8 @@ class STACAPI
      *      )
      *    )
      */
-    
-       /**
+
+    /**
      * Return a STAC catalog by path
      *
      *    @OA\Get(
@@ -398,7 +398,7 @@ class STACAPI
      *      )
      *    )
      */
-    
+
     public function getCatalogs($params)
     {
         // This is /catalogs
@@ -1785,6 +1785,19 @@ class STACAPI
         }
         // The path is the catalog identifier
         $parentAndChilds = $this->getParentAndChilds($filtered_catalogs, $params);
+        if ($parentAndChilds['parent']['rtype'] == "collection") {
+            $collectionAPI = new CollectionsAPI($this->context, $this->user);
+            $collection = $collectionAPI->getCollection(["collectionId" =>  $segments[count($segments) - 1]]);
+            array_pop($segments);
+            array_unshift($segments, 'catalogs');
+            $collection->links = [array(
+                'rel' => 'parent',
+                'type' => RestoUtil::$contentTypes['json'],
+                'href' => $this->context->core['baseUrl'] . (count($segments) > 0 ? '/' . join('/', array_map('rawurlencode', $segments)) : '')
+            )];
+            return $collection;
+        }
+
         if ($parentAndChilds['parent']['visibility']) {
             $canSee = false;
             for ($i = count($parentAndChilds['parent']['visibility']); $i--;) {
